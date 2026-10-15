@@ -1,0 +1,91 @@
+{
+  "users": {
+    "harsh": {
+      "salt": "def69bd9227bf41418f17da152110922",
+      "hash": "0141c96ee259839e79905f070b3259d185c34513bb9d56fe3d642c579e372b94",
+      "data": {
+        "role": "Frontend Developer",
+        "skills": [
+          {
+            "id": "uuxcisw",
+            "name": "HTML & CSS",
+            "required": 8,
+            "importance": 5,
+            "current": 7,
+            "status": "todo"
+          },
+          {
+            "id": "zuo8eu3",
+            "name": "JavaScript",
+            "required": 9,
+            "importance": 5,
+            "current": 7,
+            "status": "todo"
+          },
+          {
+            "id": "w023al1",
+            "name": "React",
+            "required": 8,
+            "importance": 5,
+            "current": 4,
+            "status": "todo"
+          },
+          {
+            "id": "y5z4xqx",
+            "name": "Responsive Design",
+            "required": 7,
+            "importance": 4,
+            "current": 0,
+            "status": "todo"
+          },
+          {
+            "id": "lv0z1gh",
+            "name": "Git & Version Control",
+            "required": 7,
+            "importance": 4,
+            "current": 4,
+            "status": "todo"
+          },
+          {
+            "id": "dvgt6yv",
+            "name": "TypeScript",
+            "required": 6,
+            "importance": 3,
+            "current": 0,
+            "status": "todo"
+          },
+          {
+            "id": "yfot923",
+            "name": "Testing",
+            "required": 5,
+            "importance": 3,
+            "current": 0,
+            "status": "todo"
+          },
+          {
+            "id": "6h8qi1p",
+            "name": "Web Performance",
+            "required": 5,
+            "importance": 3,
+            "current": 0,
+            "status": "todo"
+          }
+        ],
+        "known": {
+          "html & css": 7,
+          "javascript": 7,
+          "react": 4,
+          "git & version control": 4,
+          "core language (node/java/python)": 7,
+          "databases & sql": 5,
+          "rest apis": 5,
+          "sql": 5,
+          "monitoring & logging": 4
+        }
+      }
+    }
+  },
+  "sessions": {
+    "9f32c5fd7fafb4d6cbc3a8d5cc8d2b80fc0a4dfb7160f0e8": "harsh"
+  }
+}

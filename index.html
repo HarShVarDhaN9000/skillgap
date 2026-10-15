@@ -488,6 +488,14 @@
         <div class="quad-caption">Skills found in your resume raise your starting levels (they never lower them). Files are read in your browser, not uploaded anywhere.</div>
       </div>
 
+      <div class="card span2">
+        <div class="card-title"><span>AI career coach (beta)</span><span id="aiMsg"></span></div>
+        <textarea class="resume-in no-print" id="jdText" placeholder="Paste a real job description here…"></textarea>
+        <div class="quad-caption no-print">Also reads the resume text from the "Import from resume" box above, if you pasted one. Needs sign-in and the Node server with an AI key.</div>
+        <div class="resume-actions no-print"><button class="btn" id="aiBtn">Analyse job and resume</button><button class="btn" id="mockBtn">Start mock interview</button></div>
+        <div id="aiPlan"></div>
+      </div>
+
       <div class="span2 actions">
         <button class="btn" id="resetBtn">Reset current role</button>
         <button class="btn" id="copyBtn">Copy roadmap as text</button>
@@ -973,6 +981,7 @@
     renderQuadrant(derived);
     renderRoadmap(derived);
     renderReco();
+    renderPlan();
   }
 
   function renderAll(){
@@ -1168,6 +1177,78 @@
     const data = {role:state.role, skills:state.skills.map(x => ({name:x.name, required:x.required, importance:x.importance, current:x.current, status:x.status}))};
     const url = location.href.split("#")[0] + "#share=" + btoa(encodeURIComponent(JSON.stringify(data)));
     navigator.clipboard.writeText(url).then(() => flash($("shareBtn"), "Link copied ✓")).catch(() => prompt("Copy this link:", url));
+  };
+
+  // ---------- AI career coach ----------
+  async function ai(task, data){
+    if(!auth.token || auth.token.startsWith("local:")) throw new Error("Open the app via the Node server (localhost:3000) and sign in to use AI");
+    let r;
+    try{ r = await fetch("/api/ai", {method:"POST", headers:{"Content-Type":"application/json", Authorization:"Bearer " + auth.token}, body: JSON.stringify(Object.assign({task}, data))}); }
+    catch(e){ throw new Error("Server not reachable. Run it with: node server.js"); }
+    let j = {}; try{ j = await r.json(); }catch(e){}
+    if(!r.ok) throw new Error(j.error || "AI works only when the page is served by server.js");
+    return j;
+  }
+  function renderPlan(){
+    const p = state.plan, el = $("aiPlan");
+    if(!p || state.role !== "Custom (start blank)"){ el.innerHTML = ""; return; }
+    el.innerHTML = `<div class="card-title" style="margin-top:16px;"><span>Study plan: ${escapeHtml(p.role)}</span></div><div class="roadmap-desc" style="margin-bottom:8px;">${escapeHtml(p.summary)}</div>` +
+      p.items.map((it, i) => `<div class="roadmap-item"><div class="roadmap-rank">${i+1}</div><div class="roadmap-main"><div class="roadmap-name">${escapeHtml(it.skill)} <span style="color:var(--text-faint);font-weight:400;font-size:12px;">about ${it.weeks} wk</span></div><div class="roadmap-desc">${it.steps.map(x => "&bull; " + escapeHtml(x)).join("<br>")}</div></div></div>`).join("");
+  }
+  $("aiBtn").onclick = async () => {
+    const jd = $("jdText").value.trim(), msg = $("aiMsg");
+    if(jd.length < 50){ msg.textContent = "Paste a full job description first"; return; }
+    msg.textContent = "Analysing…"; $("aiBtn").disabled = true;
+    try{
+      const r = await ai("analyse", {jd, resume: $("resumeText").value});
+      const skills = (r.skills || []).slice(0, 12).filter(x => x && x.name).map(x => {
+        const name = String(x.name).slice(0, 40), known = state.known[name.toLowerCase()] || 0;
+        return {id: uid(), name, required: clamp(Math.round(x.required) || 6, 1, 10), importance: clamp(Math.round(x.importance) || 3, 1, 5),
+                current: Math.max(clamp(Math.round(x.current) || 0, 0, 10), known), status: "todo"};
+      });
+      if(skills.length < 3) throw new Error("Couldn't find enough skills in that text");
+      skills.forEach(x => state.known[x.name.toLowerCase()] = x.current);
+      state.role = "Custom (start blank)"; state.skills = skills; roleSelect.value = state.role;
+      state.plan = {role: String(r.role || "this role").slice(0, 80), summary: String(r.summary || ""),
+        items: (r.plan || []).slice(0, 6).map(x => ({skill: String(x.skill || ""), weeks: Number(x.weeks) || 2, steps: (x.steps || []).slice(0, 4).map(String)}))};
+      save(); renderAll();
+      msg.textContent = `Done: ${skills.length} skills found`;
+    }catch(e){ msg.textContent = e.message; }
+    $("aiBtn").disabled = false;
+  };
+  $("mockBtn").onclick = () => {
+    const open = computeDerived().filter(x => x.gap > 0 && x.status !== "done").sort((a, b) => b.score - a.score).slice(0, 5);
+    if(!open.length){ $("aiMsg").textContent = "No weak skills to practise"; return; }
+    const results = [], asked = [], role = state.plan ? state.plan.role : state.role;
+    let i = 0;
+    const fail = e => { openModal(`<h3>Couldn't continue</h3><p class="m-sub">${escapeHtml(e.message)}</p><button class="btn" id="mClose">Close</button>`); $("mClose").onclick = closeModal; };
+    async function next(){
+      if(i >= open.length){
+        const avg = results.length ? (results.reduce((a, r) => a + r.score, 0) / results.length).toFixed(1) : "0";
+        openModal(`<div class="m-sub">Mock interview finished</div><div class="m-big">Average ${avg}/10</div>` + results.map(r => `<div class="m-sub">${escapeHtml(r.skill)}: ${r.score}/10</div>`).join("") + `<button class="btn" id="mClose">Done</button>`);
+        $("mClose").onclick = closeModal; return;
+      }
+      const sk = open[i], tag = `<div class="m-sub">Question ${i+1} of ${open.length} · ${escapeHtml(sk.name)}</div>`;
+      openModal(tag + "<h3>Thinking of a question…</h3>");
+      try{
+        const q = String((await ai("question", {role, skill: sk.name, level: sk.current, asked})).question || "Tell me about " + sk.name + ".");
+        asked.push(q);
+        openModal(tag + `<h3>${escapeHtml(q)}</h3><textarea class="resume-in" id="mAns" placeholder="Answer like you would in a real interview…"></textarea><button class="btn" id="mSend">Submit answer</button><button class="m-link" id="mSkip">Skip</button>`);
+        $("mSkip").onclick = () => { i++; next(); };
+        $("mSend").onclick = async () => {
+          const answer = $("mAns").value.trim(); if(!answer) return;
+          $("mSend").disabled = true; $("mSend").textContent = "Scoring…";
+          try{
+            const g = await ai("grade", {skill: sk.name, question: q, answer});
+            const score = clamp(Math.round(g.score) || 0, 0, 10);
+            results.push({skill: sk.name, score});
+            openModal(`<div class="m-sub">${escapeHtml(sk.name)}</div><div class="m-big">${score}/10</div><p class="m-sub" style="color:var(--text)">${escapeHtml(g.feedback)}</p><p class="m-sub">Tip: ${escapeHtml(g.tip)}</p><button class="btn" id="mNext">${i + 1 < open.length ? "Next question" : "See results"}</button>`);
+            $("mNext").onclick = () => { i++; next(); };
+          }catch(e){ fail(e); }
+        };
+      }catch(e){ fail(e); }
+    }
+    next();
   };
 
   renderAuth();
