@@ -1,0 +1,1182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SkillGap — Close the gap, deliberately</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0F1717;
+    --bg-raised:#172221;
+    --bg-raised-2:#1D2A28;
+    --line:rgba(255,255,255,0.09);
+    --text:#EAF1EE;
+    --text-dim:rgba(234,241,238,0.6);
+    --text-faint:rgba(234,241,238,0.35);
+    --current:#8FD9C4;      /* where you are */
+    --current-fill:rgba(143,217,196,0.16);
+    --required:#C1683C;     /* where the role needs you */
+    --required-fill:rgba(193,104,60,0.12);
+    --focus:#E4B363;        /* quick-win / focus-now highlight */
+    --done:#6B9C7F;
+    --todo:#5B6664;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Manrope', sans-serif;
+    min-height:100vh;
+  }
+  .wrap{max-width:1240px; margin:0 auto; padding:40px 28px 100px;}
+
+  header{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-end;
+    gap:20px;
+    flex-wrap:wrap;
+    border-bottom:1px solid var(--line);
+    padding-bottom:22px;
+    margin-bottom:28px;
+  }
+  .logo{
+    font-weight:800;
+    font-size:25px;
+    letter-spacing:-0.01em;
+  }
+  .logo .dot{color:var(--current);}
+  .tagline{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11.5px;
+    color:var(--text-faint);
+    max-width:340px;
+    text-align:right;
+    line-height:1.5;
+  }
+
+  /* role selector */
+  .role-bar{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    flex-wrap:wrap;
+    margin-bottom:26px;
+  }
+  .role-bar label{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:10.5px;
+    text-transform:uppercase;
+    letter-spacing:0.08em;
+    color:var(--text-faint);
+  }
+  select{
+    background:var(--bg-raised);
+    border:1px solid var(--line);
+    color:var(--text);
+    font-family:'Manrope', sans-serif;
+    font-size:13.5px;
+    padding:9px 12px;
+    border-radius:5px;
+    outline:none;
+  }
+  select:focus{border-color:var(--current);}
+  .role-warn{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11px;
+    color:var(--focus);
+  }
+
+  /* layout */
+  .layout{
+    display:grid;
+    grid-template-columns:420px 1fr;
+    gap:24px;
+    align-items:start;
+  }
+
+  .card{
+    background:var(--bg-raised);
+    border:1px solid var(--line);
+    border-radius:6px;
+    padding:20px 20px 22px;
+  }
+  .card-title{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:10.5px;
+    letter-spacing:0.1em;
+    text-transform:uppercase;
+    color:var(--text-faint);
+    margin-bottom:14px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+  }
+
+  /* skill editor rows */
+  .skill-row{
+    padding:14px 0;
+    border-bottom:1px solid var(--line);
+  }
+  .skill-row:last-of-type{border-bottom:none;}
+  .skill-row-top{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:8px;
+    margin-bottom:10px;
+  }
+  .skill-name{
+    font-size:14px;
+    font-weight:600;
+  }
+  .skill-name[contenteditable]{outline:none; border-bottom:1px dashed transparent; cursor:text;}
+  .skill-name[contenteditable]:hover, .skill-name[contenteditable]:focus{border-bottom-color:var(--text-faint);}
+  .skill-remove{
+    background:none; border:none; color:var(--text-faint); cursor:pointer; font-size:13px; padding:2px 5px;
+  }
+  .skill-remove:hover{color:var(--required);}
+
+  .mini-field{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:10.5px;
+    color:var(--text-faint);
+  }
+  .mini-field input[type=number]{
+    width:38px;
+    background:var(--bg-raised-2);
+    border:1px solid var(--line);
+    color:var(--text);
+    border-radius:3px;
+    padding:3px 4px;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11px;
+    text-align:center;
+  }
+  .meta-row{display:flex; gap:14px; margin-bottom:10px; flex-wrap:wrap;}
+
+  .slider-row{display:flex; align-items:center; gap:10px;}
+  .slider-row .tag{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:10.5px;
+    color:var(--current);
+    width:58px;
+    flex-shrink:0;
+  }
+  input[type=range]{
+    -webkit-appearance:none;
+    flex:1;
+    height:4px;
+    border-radius:4px;
+    background:var(--line);
+    accent-color:var(--current);
+    outline:none;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;
+    width:15px;height:15px;
+    border-radius:50%;
+    background:var(--current);
+    cursor:pointer;
+    border:2px solid var(--bg-raised);
+  }
+  .slider-row .val{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12px;
+    width:34px;
+    text-align:right;
+    color:var(--text-dim);
+  }
+
+  .status-row{
+    margin-top:10px;
+    display:flex;
+    justify-content:flex-end;
+  }
+  .status-btn{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:10.5px;
+    padding:5px 10px;
+    border-radius:20px;
+    border:1px solid var(--line);
+    background:none;
+    color:var(--text-faint);
+    cursor:pointer;
+  }
+  .status-btn.todo{color:var(--todo); border-color:var(--todo);}
+  .status-btn.inprogress{color:var(--focus); border-color:var(--focus);}
+  .status-btn.done{color:var(--done); border-color:var(--done); text-decoration:line-through; opacity:0.75;}
+
+  .add-skill-form{
+    display:flex;
+    gap:8px;
+    margin-top:16px;
+    flex-wrap:wrap;
+  }
+  .add-skill-form input[type=text]{
+    flex:1;
+    min-width:120px;
+    background:var(--bg-raised-2);
+    border:1px solid var(--line);
+    color:var(--text);
+    border-radius:4px;
+    padding:9px 10px;
+    font-family:'Manrope', sans-serif;
+    font-size:13px;
+    outline:none;
+  }
+  .add-skill-form input[type=text]:focus{border-color:var(--current);}
+  .add-skill-btn{
+    background:var(--current);
+    color:#0F1717;
+    border:none;
+    font-family:'IBM Plex Mono', monospace;
+    font-weight:700;
+    font-size:12px;
+    padding:9px 14px;
+    border-radius:4px;
+    cursor:pointer;
+  }
+  .add-skill-btn:hover{opacity:0.85;}
+
+  .empty-note{
+    font-size:13px;
+    color:var(--text-faint);
+    line-height:1.6;
+    padding:12px 0;
+  }
+
+  /* right column grid */
+  .right-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:20px;
+  }
+  .span2{grid-column:1 / -1;}
+
+  /* readiness donut */
+  .readiness-card{
+    display:flex;
+    align-items:center;
+    gap:20px;
+  }
+  .readiness-num{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:13px;
+    color:var(--text-dim);
+    line-height:1.6;
+  }
+  .readiness-num b{
+    display:block;
+    font-size:28px;
+    color:var(--current);
+    font-family:'Manrope', sans-serif;
+    font-weight:800;
+  }
+
+  /* legend */
+  .legend{
+    display:flex;
+    gap:18px;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11px;
+    color:var(--text-dim);
+    margin-top:8px;
+  }
+  .legend span{display:inline-flex; align-items:center; gap:6px;}
+  .swatch-dot{width:10px; height:10px; border-radius:50%; display:inline-block;}
+
+  /* quadrant labels */
+  .quad-caption{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:10px;
+    color:var(--text-faint);
+    margin-top:8px;
+    line-height:1.6;
+  }
+
+  /* roadmap */
+  .roadmap-item{
+    display:flex;
+    align-items:flex-start;
+    gap:14px;
+    padding:14px 0;
+    border-bottom:1px solid var(--line);
+  }
+  .roadmap-item:last-child{border-bottom:none;}
+  .roadmap-rank{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:16px;
+    font-weight:600;
+    color:var(--focus);
+    width:26px;
+    flex-shrink:0;
+  }
+  .roadmap-main{flex:1;}
+  .roadmap-name{font-weight:700; font-size:14.5px; margin-bottom:3px;}
+  .roadmap-desc{
+    font-size:12.5px;
+    color:var(--text-dim);
+    line-height:1.5;
+  }
+  .roadmap-badge{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:10px;
+    padding:3px 8px;
+    border-radius:20px;
+    border:1px solid var(--line);
+    white-space:nowrap;
+    color:var(--text-faint);
+    align-self:flex-start;
+  }
+  .roadmap-badge.focus{color:var(--focus); border-color:var(--focus);}
+  .roadmap-badge.maintain{color:var(--current); border-color:var(--current);}
+  .roadmap-badge.later{color:var(--text-faint); border-color:var(--line);}
+
+  .completed-list{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11.5px;
+    color:var(--done);
+    line-height:2;
+  }
+
+  .actions{
+    display:flex;
+    gap:10px;
+    margin-top:4px;
+  }
+  .btn{
+    flex:1;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11.5px;
+    padding:11px;
+    border-radius:5px;
+    border:1px solid var(--line);
+    background:none;
+    color:var(--text-dim);
+    cursor:pointer;
+    text-align:center;
+  }
+  .btn:hover{border-color:var(--text-faint); color:var(--text);}
+
+
+  .auth-bar{display:flex;gap:10px;align-items:center;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text-dim);}
+  .btn-sm{background:none;border:1px solid var(--line);color:var(--text-dim);font-family:'IBM Plex Mono',monospace;font-size:11px;padding:6px 10px;border-radius:4px;cursor:pointer;text-decoration:none;}
+  .btn-sm:hover{border-color:var(--current);color:var(--current);}
+  .actions{flex-wrap:wrap;} .actions .btn{min-width:150px;}
+  .quiz-btn{color:var(--current);border-color:var(--current);margin-right:8px;}
+  .reco-row{display:flex;align-items:center;gap:12px;padding:8px 0;cursor:pointer;font-size:13.5px;}
+  .reco-row:hover .reco-name{color:var(--current);}
+  .reco-name{width:170px;flex-shrink:0;font-weight:600;}
+  .reco-bar{flex:1;height:8px;background:var(--line);border-radius:6px;overflow:hidden;}
+  .reco-bar i{display:block;height:100%;background:var(--current);}
+  .reco-pct{font-family:'IBM Plex Mono',monospace;font-size:12px;width:40px;text-align:right;color:var(--text-dim);}
+  textarea.resume-in{width:100%;min-height:90px;background:var(--bg-raised-2);border:1px solid var(--line);color:var(--text);border-radius:4px;padding:10px;font-family:'IBM Plex Mono',monospace;font-size:12px;resize:vertical;outline:none;}
+  .resume-actions{display:flex;gap:10px;align-items:center;margin:10px 0 4px;flex-wrap:wrap;font-size:12px;color:var(--text-dim);}
+  .resume-actions .btn{flex:none;padding:9px 14px;}
+  .modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:50;padding:20px;}
+  .modal[hidden]{display:none;}
+  .modal-box{background:var(--bg-raised);border:1px solid var(--line);border-radius:8px;padding:24px;width:min(440px,100%);display:flex;flex-direction:column;gap:10px;}
+  .modal-box h3{margin:0 0 4px;font-size:17px;line-height:1.4;}
+  .modal-box .btn{flex:none;}
+  .m-opt{text-align:left;font-family:'Manrope',sans-serif;font-size:13.5px;}
+  .m-sub{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text-faint);line-height:1.6;margin:0;}
+  .m-big{font-size:22px;font-weight:800;color:var(--current);margin:4px 0;}
+  .m-in{background:var(--bg-raised-2);border:1px solid var(--line);color:var(--text);border-radius:4px;padding:10px;font-family:'Manrope',sans-serif;font-size:14px;outline:none;}
+  .m-in:focus{border-color:var(--current);}
+  .m-err{color:var(--required);font-size:12px;min-height:14px;}
+  .m-link{background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:12px;text-decoration:underline;}
+  @media print{
+    *{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+    .no-print,.add-skill-form,.skill-remove,.actions,.modal{display:none !important;}
+    .card{break-inside:avoid;}
+  }
+
+  @media (max-width:980px){
+    .layout{grid-template-columns:1fr;}
+    .right-grid{grid-template-columns:1fr;}
+    .tagline{text-align:left;}
+  }
+
+  :focus-visible{outline:2px solid var(--current); outline-offset:2px;}
+  @media (prefers-reduced-motion: reduce){ *{transition:none !important;} }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="logo">Skill<span class="dot">Gap</span></div>
+    <div class="tagline">Rate yourself against a real role. See the shape of the gap, then get a ranked plan to close it.</div>
+    <div class="auth-bar no-print" id="authBar"></div>
+  </header>
+
+  <div class="role-bar">
+    <label for="roleSelect">Target role</label>
+    <select id="roleSelect"></select>
+    <span class="role-warn" id="roleWarn"></span>
+  </div>
+
+  <div class="layout">
+    <!-- LEFT: skill editors -->
+    <div class="card">
+      <div class="card-title">
+        <span>Your skills</span>
+        <span id="skillCount"></span>
+      </div>
+      <div id="skillList"></div>
+      <div id="emptyNote" class="empty-note" style="display:none;">No skills yet — pick a role above to load a skill set, or add your own below.</div>
+      <div class="add-skill-form">
+        <input type="text" id="newSkillName" placeholder="Add a skill, e.g. Docker">
+        <button class="add-skill-btn" id="addSkillBtn">Add</button>
+      </div>
+    </div>
+
+    <!-- RIGHT: visuals -->
+    <div class="right-grid">
+      <div class="card readiness-card span2">
+        <div id="readinessDonut"></div>
+        <div class="readiness-num">
+          Overall readiness for this role
+          <b id="readinessPct">0%</b>
+          <span id="readinessSub" style="color:var(--text-faint); font-size:11px;"></span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Skill shape — you vs the role</div>
+        <div id="radarWrap"></div>
+        <div class="legend">
+          <span><i class="swatch-dot" style="background:var(--current)"></i>You</span>
+          <span><i class="swatch-dot" style="background:var(--required)"></i>Required</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Where to spend effort</div>
+        <div id="quadWrap"></div>
+        <div class="quad-caption">Top-right = biggest gap on the skills that matter most. Bottom-left = lowest priority right now.</div>
+      </div>
+
+      <div class="card span2">
+        <div class="card-title">
+          <span>Prioritized roadmap</span>
+          <span id="roadmapCount"></span>
+        </div>
+        <div id="roadmapList"></div>
+        <div id="completedWrap"></div>
+      </div>
+
+      <div class="card span2">
+        <div class="card-title"><span>Best-fit roles for your current skills</span><span>click a role to switch</span></div>
+        <div id="recoList"></div>
+      </div>
+
+      <div class="card span2 no-print">
+        <div class="card-title"><span>Import from resume</span><span id="resumeMsg"></span></div>
+        <textarea class="resume-in" id="resumeText" placeholder="Paste your resume text here, or upload a PDF / .txt file below…"></textarea>
+        <div class="resume-actions">
+          <input type="file" id="resumeFile" accept=".pdf,.txt,.md">
+          <button class="btn" id="resumeBtn">Detect my skills</button>
+        </div>
+        <div class="quad-caption">Skills found in your resume raise your starting levels (they never lower them). Files are read in your browser, not uploaded anywhere.</div>
+      </div>
+
+      <div class="span2 actions">
+        <button class="btn" id="resetBtn">Reset current role</button>
+        <button class="btn" id="copyBtn">Copy roadmap as text</button>
+        <button class="btn" id="pdfBtn">Export as PDF</button>
+        <button class="btn" id="shareBtn">Copy share link</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="modal" hidden><div class="modal-box" id="modalBox"></div></div>
+
+<script>
+(function(){
+  "use strict";
+
+  const STORAGE_KEY = "skillgap_v1";
+
+  const ROLE_PRESETS = {
+    "Frontend Developer": [
+      {name:"HTML & CSS", required:8, importance:5},
+      {name:"JavaScript", required:9, importance:5},
+      {name:"React", required:8, importance:5},
+      {name:"Responsive Design", required:7, importance:4},
+      {name:"Git & Version Control", required:7, importance:4},
+      {name:"TypeScript", required:6, importance:3},
+      {name:"Testing", required:5, importance:3},
+      {name:"Web Performance", required:5, importance:3},
+    ],
+    "Backend Developer": [
+      {name:"Core Language (Node/Java/Python)", required:9, importance:5},
+      {name:"Databases & SQL", required:8, importance:5},
+      {name:"REST APIs", required:8, importance:5},
+      {name:"System Design", required:6, importance:4},
+      {name:"Git & Version Control", required:7, importance:3},
+      {name:"Cloud Basics", required:6, importance:4},
+      {name:"Testing", required:5, importance:3},
+      {name:"Security Basics", required:5, importance:3},
+    ],
+    "Data Analyst": [
+      {name:"SQL", required:9, importance:5},
+      {name:"Excel", required:8, importance:4},
+      {name:"Python", required:7, importance:5},
+      {name:"Statistics", required:8, importance:5},
+      {name:"Data Visualization", required:7, importance:4},
+      {name:"Power BI / Tableau", required:6, importance:3},
+      {name:"Communicating Findings", required:7, importance:4},
+    ],
+    "UI/UX Designer": [
+      {name:"Figma", required:8, importance:5},
+      {name:"User Research", required:7, importance:5},
+      {name:"Wireframing", required:7, importance:4},
+      {name:"Visual Design", required:8, importance:5},
+      {name:"Prototyping", required:7, importance:4},
+      {name:"Design Systems", required:6, importance:3},
+      {name:"Usability Testing", required:6, importance:4},
+    ],
+    "ML Engineer": [
+      {name:"Python", required:9, importance:5},
+      {name:"Math & Statistics", required:8, importance:5},
+      {name:"ML Algorithms", required:8, importance:5},
+      {name:"Data Preprocessing", required:7, importance:4},
+      {name:"Deep Learning", required:7, importance:4},
+      {name:"Model Deployment", required:6, importance:4},
+      {name:"SQL", required:6, importance:3},
+    ],
+    "DevOps Engineer": [
+      {name:"Linux", required:8, importance:5},
+      {name:"CI/CD", required:8, importance:5},
+      {name:"Docker", required:8, importance:5},
+      {name:"Cloud Platforms (AWS/Azure/GCP)", required:8, importance:5},
+      {name:"Scripting (Bash/Python)", required:7, importance:4},
+      {name:"Monitoring & Logging", required:6, importance:3},
+      {name:"Networking Basics", required:6, importance:3},
+    ],
+    "Custom (start blank)": []
+  };
+
+  function uid(){ return Math.random().toString(36).slice(2,9); }
+  function clamp(n, lo, hi){ return Math.max(lo, Math.min(hi, n)); }
+  function escapeHtml(str){
+    if(!str) return "";
+    return str.replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));
+  }
+
+  function freshSkillsFromPreset(role, known){
+    known = known || {};
+    return (ROLE_PRESETS[role] || []).map(x => ({
+      id: uid(), name: x.name, required: x.required, importance: x.importance,
+      current: known[x.name.toLowerCase()] || 0, status: "todo"
+    }));
+  }
+
+  let readOnly = false;
+  let state = load();
+
+  function normalize(p){
+    p.known = p.known || {};
+    p.skills.forEach(x => { x.id = x.id || uid(); const k = x.name.toLowerCase(); if(x.current && !p.known[k]) p.known[k] = x.current; });
+    return p;
+  }
+
+  function load(){
+    try{
+      if(location.hash.startsWith("#share=")){
+        const p = JSON.parse(decodeURIComponent(atob(location.hash.slice(7))));
+        if(p && p.role && Array.isArray(p.skills)){ readOnly = true; return normalize(p); }
+      }
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if(raw){
+        const parsed = JSON.parse(raw);
+        if(parsed && parsed.role && Array.isArray(parsed.skills)) return normalize(parsed);
+      }
+    }catch(e){}
+    const role = "Frontend Developer";
+    return { role, skills: freshSkillsFromPreset(role), known: {} };
+  }
+
+  function save(){
+    if(readOnly) return;
+    try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }catch(e){}
+    pushCloud();
+  }
+
+  function setLevel(sk, v){ sk.current = v; state.known[sk.name.toLowerCase()] = v; }
+
+  // ---------- Role selector ----------
+  const roleSelect = document.getElementById("roleSelect");
+  Object.keys(ROLE_PRESETS).forEach(role => {
+    const opt = document.createElement("option");
+    opt.value = role;
+    opt.textContent = role;
+    if(role === state.role) opt.selected = true;
+    roleSelect.appendChild(opt);
+  });
+
+  roleSelect.addEventListener("change", () => {
+    const newRole = roleSelect.value;
+    const proceed = state.skills.length === 0 || confirm(`Load "${newRole}"? This replaces your current skill list (${state.skills.length} skills).`);
+    if(!proceed){
+      roleSelect.value = state.role;
+      return;
+    }
+    state.role = newRole;
+    state.skills = freshSkillsFromPreset(newRole, state.known);
+    save();
+    renderAll();
+  });
+
+  // ---------- Skill list editor ----------
+  const skillList = document.getElementById("skillList");
+  const emptyNote = document.getElementById("emptyNote");
+  const skillCount = document.getElementById("skillCount");
+
+  function renderSkillList(){
+    skillList.innerHTML = "";
+    skillCount.textContent = state.skills.length ? `${state.skills.length} tracked` : "";
+    emptyNote.style.display = state.skills.length ? "none" : "block";
+
+    state.skills.forEach(s => {
+      const row = document.createElement("div");
+      row.className = "skill-row";
+      row.innerHTML = `
+        <div class="skill-row-top">
+          <span class="skill-name" contenteditable="true" spellcheck="false">${escapeHtml(s.name)}</span>
+          <button class="skill-remove" data-remove title="Remove skill">✕</button>
+        </div>
+        <div class="meta-row">
+          <span class="mini-field">Required <input type="number" min="1" max="10" data-required value="${s.required}"></span>
+          <span class="mini-field">Importance <input type="number" min="1" max="5" data-importance value="${s.importance}"></span>
+        </div>
+        <div class="slider-row">
+          <span class="tag">You: ${s.current}</span>
+          <input type="range" min="0" max="10" step="1" data-current value="${s.current}">
+        </div>
+        <div class="status-row">
+          ${QUIZ[s.name.toLowerCase()] ? '<button class="status-btn quiz-btn" data-quiz>Take quiz</button>' : ''}<button class="status-btn ${s.status}" data-status>${statusLabel(s.status)}</button>
+        </div>
+      `;
+
+      row.querySelector(".skill-name").addEventListener("blur", e => {
+        s.name = e.target.textContent.trim() || s.name;
+        save(); renderAll();
+      });
+      row.querySelector(".skill-name").addEventListener("keydown", e => {
+        if(e.key === "Enter"){ e.preventDefault(); e.target.blur(); }
+      });
+      row.querySelector("[data-remove]").addEventListener("click", () => {
+        state.skills = state.skills.filter(x => x.id !== s.id);
+        save(); renderAll();
+      });
+      row.querySelector("[data-required]").addEventListener("input", e => {
+        s.required = clamp(Number(e.target.value) || 1, 1, 10);
+        save(); renderVisualsOnly();
+      });
+      row.querySelector("[data-importance]").addEventListener("input", e => {
+        s.importance = clamp(Number(e.target.value) || 1, 1, 5);
+        save(); renderVisualsOnly();
+      });
+      const currentInput = row.querySelector("[data-current]");
+      const currentTag = row.querySelector(".tag");
+      currentInput.addEventListener("input", e => {
+        setLevel(s, Number(e.target.value));
+        currentTag.textContent = `You: ${s.current}`;
+        save(); renderVisualsOnly();
+      });
+      row.querySelector("[data-status]").addEventListener("click", e => {
+        const order = ["todo","inprogress","done"];
+        const next = order[(order.indexOf(s.status) + 1) % order.length];
+        s.status = next;
+        e.target.className = `status-btn ${next}`;
+        e.target.textContent = statusLabel(next);
+        save(); renderVisualsOnly();
+      });
+
+      const qb = row.querySelector("[data-quiz]");
+      if(qb) qb.addEventListener("click", () => openQuiz(s));
+      skillList.appendChild(row);
+    });
+  }
+
+  function statusLabel(status){
+    if(status === "done") return "✓ Done";
+    if(status === "inprogress") return "In progress";
+    return "To do";
+  }
+
+  // ---------- Add skill ----------
+  const newSkillName = document.getElementById("newSkillName");
+  document.getElementById("addSkillBtn").addEventListener("click", addSkill);
+  newSkillName.addEventListener("keydown", e => { if(e.key === "Enter"){ e.preventDefault(); addSkill(); } });
+
+  function addSkill(){
+    const name = newSkillName.value.trim();
+    if(!name) return;
+    state.skills.push({id:uid(), name, required:6, importance:3, current:0, status:"todo"});
+    newSkillName.value = "";
+    save();
+    renderAll();
+  }
+
+  // ---------- Derived data ----------
+  function computeDerived(){
+    return state.skills.map(s => {
+      const gap = Math.max(0, s.required - s.current);
+      const active = s.status !== "done";
+      const score = active ? gap * s.importance : 0;
+      const pct = s.required > 0 ? clamp((s.current / s.required) * 100, 0, 100) : 100;
+      return Object.assign({}, s, {gap, score, pct});
+    });
+  }
+
+  // ---------- Readiness donut ----------
+  function renderReadiness(derived){
+    const totalWeight = derived.reduce((sum, s) => sum + s.importance, 0);
+    const readiness = totalWeight > 0
+      ? Math.round(derived.reduce((sum, s) => sum + s.pct * s.importance, 0) / totalWeight)
+      : 0;
+
+    const r = 46, stroke = 10;
+    const circumference = 2 * Math.PI * r;
+    const offset = circumference * (1 - readiness / 100);
+    const size = (r + stroke) * 2;
+    const c = size / 2;
+
+    const svg = `
+      <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+        <circle cx="${c}" cy="${c}" r="${r}" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="${stroke}"/>
+        <circle cx="${c}" cy="${c}" r="${r}" fill="none" stroke="var(--current)" stroke-width="${stroke}"
+          stroke-dasharray="${circumference}" stroke-dashoffset="${offset}"
+          stroke-linecap="round" transform="rotate(-90 ${c} ${c})"/>
+        <text x="${c}" y="${c+6}" text-anchor="middle" fill="#EAF1EE" font-family="IBM Plex Mono, monospace" font-size="18" font-weight="700">${readiness}%</text>
+      </svg>
+    `;
+    document.getElementById("readinessDonut").innerHTML = svg;
+    document.getElementById("readinessPct").textContent = readiness + "%";
+
+    const behind = derived.filter(s => s.gap > 0 && s.status !== "done").length;
+    const sub = document.getElementById("readinessSub");
+    sub.textContent = derived.length === 0
+      ? "Add skills to begin"
+      : behind === 0
+        ? "You meet or exceed every tracked skill."
+        : `${behind} skill${behind === 1 ? "" : "s"} below target for ${state.role}.`;
+  }
+
+  // ---------- Radar chart ----------
+  function renderRadar(derived){
+    const wrap = document.getElementById("radarWrap");
+    if(derived.length < 3){
+      wrap.innerHTML = `<div class="empty-note">Add at least 3 skills to draw the radar shape.</div>`;
+      return;
+    }
+    const size = 340;
+    const cx = size/2, cy = size/2;
+    const maxR = 118;
+    const n = derived.length;
+    const angleStep = 360 / n;
+
+    function point(radius, i){
+      const angle = i * angleStep - 90;
+      const rad = angle * Math.PI / 180;
+      return {x: cx + radius * Math.cos(rad), y: cy + radius * Math.sin(rad)};
+    }
+
+    // grid rings
+    let gridRings = "";
+    [2,4,6,8,10].forEach(v => {
+      const pts = derived.map((s,i) => { const p = point(maxR * v/10, i); return `${p.x},${p.y}`; }).join(" ");
+      gridRings += `<polygon points="${pts}" fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="1"/>`;
+    });
+
+    // spokes
+    let spokes = "";
+    derived.forEach((s,i) => {
+      const p = point(maxR, i);
+      spokes += `<line x1="${cx}" y1="${cy}" x2="${p.x}" y2="${p.y}" stroke="rgba(255,255,255,0.07)" stroke-width="1"/>`;
+    });
+
+    // required polygon
+    const reqPts = derived.map((s,i) => { const p = point(maxR * Math.min(s.required,10)/10, i); return `${p.x},${p.y}`; }).join(" ");
+    // current polygon
+    const curPts = derived.map((s,i) => { const p = point(maxR * Math.min(s.current,10)/10, i); return `${p.x},${p.y}`; }).join(" ");
+
+    // labels
+    let labels = "";
+    derived.forEach((s,i) => {
+      const p = point(maxR + 26, i);
+      const angle = i * angleStep - 90;
+      const rad = angle * Math.PI / 180;
+      const cosv = Math.cos(rad), sinv = Math.sin(rad);
+      let anchor = "middle";
+      if(cosv > 0.25) anchor = "start";
+      else if(cosv < -0.25) anchor = "end";
+      let dy = 4;
+      if(sinv < -0.5) dy = -2;
+      else if(sinv > 0.5) dy = 12;
+      const shortName = s.name.length > 16 ? s.name.slice(0,15) + "…" : s.name;
+      labels += `<text x="${p.x}" y="${p.y}" text-anchor="${anchor}" dy="${dy}" fill="rgba(234,241,238,0.6)" font-family="IBM Plex Mono, monospace" font-size="10">${escapeHtml(shortName)}</text>`;
+    });
+
+    const svg = `
+      <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+        ${gridRings}
+        ${spokes}
+        <polygon points="${reqPts}" fill="var(--required-fill)" stroke="var(--required)" stroke-width="2"/>
+        <polygon points="${curPts}" fill="var(--current-fill)" stroke="var(--current)" stroke-width="2"/>
+        ${labels}
+      </svg>
+    `;
+    wrap.innerHTML = svg;
+  }
+
+  // ---------- Priority quadrant ----------
+  function renderQuadrant(derived){
+    const wrap = document.getElementById("quadWrap");
+    if(derived.length === 0){
+      wrap.innerHTML = `<div class="empty-note">Add skills to see priorities plotted.</div>`;
+      return;
+    }
+    const w = 340, h = 300;
+    const padL = 46, padR = 20, padT = 20, padB = 40;
+    const plotW = w - padL - padR, plotH = h - padT - padB;
+    const midX = padL + plotW/2, midY = padT + plotH/2;
+
+    function xFor(gap){ return padL + (gap/10) * plotW; }
+    function yFor(importance){ return padT + plotH - ((importance-1)/4) * plotH; }
+
+    let dots = "";
+    let indexLegend = "";
+    derived.forEach((s, i) => {
+      const x = xFor(s.gap);
+      const y = yFor(s.importance);
+      const color = s.status === "done" ? "var(--done)" : (s.gap === 0 ? "var(--current)" : "var(--required)");
+      const r = s.status === "done" ? 5 : 6 + s.importance;
+      dots += `<circle cx="${x}" cy="${y}" r="${r}" fill="${color}" fill-opacity="0.85" stroke="${color}" stroke-width="1"><title>${escapeHtml(s.name)} — gap ${s.gap}, importance ${s.importance}</title></circle>`;
+      dots += `<text x="${x}" y="${y+3}" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="9" fill="#0F1717">${i+1}</text>`;
+      indexLegend += `<span style="display:flex;gap:6px;align-items:center;">
+        <span style="font-family:'IBM Plex Mono',monospace;color:var(--text-faint);font-size:10.5px;">${i+1}</span>
+        <span style="font-size:11.5px;color:var(--text-dim);">${escapeHtml(s.name)}</span>
+      </span>`;
+    });
+
+    const svg = `
+      <svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
+        <rect x="${padL}" y="${padT}" width="${plotW/2}" height="${plotH/2}" fill="rgba(255,255,255,0.02)"/>
+        <rect x="${midX}" y="${padT}" width="${plotW/2}" height="${plotH/2}" fill="rgba(228,179,99,0.06)"/>
+        <line x1="${padL}" y1="${midY}" x2="${w-padR}" y2="${midY}" stroke="rgba(255,255,255,0.12)" stroke-width="1"/>
+        <line x1="${midX}" y1="${padT}" x2="${midX}" y2="${h-padB}" stroke="rgba(255,255,255,0.12)" stroke-width="1"/>
+        <line x1="${padL}" y1="${padT}" x2="${padL}" y2="${h-padB}" stroke="rgba(255,255,255,0.2)" stroke-width="1"/>
+        <line x1="${padL}" y1="${h-padB}" x2="${w-padR}" y2="${h-padB}" stroke="rgba(255,255,255,0.2)" stroke-width="1"/>
+        <text x="${padL}" y="${h-padB+16}" font-family="IBM Plex Mono, monospace" font-size="9" fill="rgba(234,241,238,0.4)">low gap</text>
+        <text x="${w-padR}" y="${h-padB+16}" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="9" fill="rgba(234,241,238,0.4)">high gap</text>
+        <text x="${padL-8}" y="${padT+8}" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="9" fill="rgba(234,241,238,0.4)">high imp.</text>
+        <text x="${padL-8}" y="${h-padB}" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="9" fill="rgba(234,241,238,0.4)">low imp.</text>
+        <text x="${w-padR-4}" y="${padT+14}" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="9" fill="var(--focus)">FOCUS NOW</text>
+        ${dots}
+      </svg>
+    `;
+    wrap.innerHTML = svg + `<div class="legend" style="flex-wrap:wrap; gap:8px 16px;">${indexLegend}</div>`;
+  }
+
+  // ---------- Roadmap ----------
+  function renderRoadmap(derived){
+    const active = derived.filter(s => s.status !== "done" && s.gap > 0).sort((a,b) => b.score - a.score);
+    const covered = derived.filter(s => s.status === "done" || s.gap === 0);
+
+    const roadmapList = document.getElementById("roadmapList");
+    document.getElementById("roadmapCount").textContent = active.length ? `${active.length} open` : "";
+
+    if(active.length === 0){
+      roadmapList.innerHTML = `<div class="empty-note">${derived.length === 0 ? "Add skills to generate a roadmap." : "Nothing left to close — every tracked skill meets its target."}</div>`;
+    } else {
+      roadmapList.innerHTML = active.map((s, i) => {
+        let badge = "later", badgeText = "Later";
+        if(s.importance >= 4 && s.gap >= 5){ badge = "focus"; badgeText = "Focus now"; }
+        else if(s.importance >= 4 && s.gap < 5){ badge = "maintain"; badgeText = "Polish"; }
+        else if(s.importance < 4 && s.gap >= 5){ badge = "later"; badgeText = "When you have time"; }
+        else { badge = "later"; badgeText = "Low priority"; }
+
+        const desc = badge === "focus"
+          ? `You're at ${s.current}/${s.required} and this is one of the role's most important skills. Closing this gap moves the needle most.`
+          : badge === "maintain"
+            ? `Close already — a small push gets you to the required ${s.required}.`
+            : `Matters less right now, or the gap is small enough to defer without much risk.`;
+
+        return `
+          <div class="roadmap-item">
+            <div class="roadmap-rank">${i+1}</div>
+            <div class="roadmap-main">
+              <div class="roadmap-name">${escapeHtml(s.name)} <span style="color:var(--text-faint); font-weight:400; font-size:12px;">— ${s.current} → ${s.required}</span></div>
+              <div class="roadmap-desc">${desc}</div>
+            </div>
+            <div class="roadmap-badge ${badge}">${badgeText}</div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    const completedWrap = document.getElementById("completedWrap");
+    if(covered.length){
+      completedWrap.innerHTML = `
+        <div class="card-title" style="margin-top:16px;">Already covered</div>
+        <div class="completed-list">${covered.map(s => `✓ ${escapeHtml(s.name)} (${s.current}/${s.required})`).join("<br>")}</div>
+      `;
+    } else {
+      completedWrap.innerHTML = "";
+    }
+  }
+
+  // ---------- Copy / reset ----------
+  document.getElementById("copyBtn").addEventListener("click", () => {
+    const derived = computeDerived();
+    const active = derived.filter(s => s.status !== "done" && s.gap > 0).sort((a,b) => b.score - a.score);
+    const totalWeight = derived.reduce((sum, s) => sum + s.importance, 0);
+    const readiness = totalWeight > 0 ? Math.round(derived.reduce((sum, s) => sum + s.pct * s.importance, 0) / totalWeight) : 0;
+
+    let text = `SKILLGAP ROADMAP — ${state.role}\nReadiness: ${readiness}%\n\n`;
+    active.forEach((s,i) => { text += `${i+1}. ${s.name} — ${s.current}/${s.required} (gap ${s.gap})\n`; });
+    if(active.length === 0) text += "No open gaps — every tracked skill meets its target.\n";
+
+    navigator.clipboard.writeText(text).then(() => {
+      const btn = document.getElementById("copyBtn");
+      const old = btn.textContent;
+      btn.textContent = "Copied ✓";
+      setTimeout(() => btn.textContent = old, 1500);
+    }).catch(() => alert(text));
+  });
+
+  document.getElementById("resetBtn").addEventListener("click", () => {
+    if(!confirm(`Reset "${state.role}" back to a fresh skill set? Your ratings will be cleared.`)) return;
+    state.skills.forEach(x => delete state.known[x.name.toLowerCase()]);
+    state.skills = freshSkillsFromPreset(state.role);
+    save();
+    renderAll();
+  });
+
+  // ---------- Render orchestration ----------
+  function renderVisualsOnly(){
+    const derived = computeDerived();
+    renderReadiness(derived);
+    renderRadar(derived);
+    renderQuadrant(derived);
+    renderRoadmap(derived);
+    renderReco();
+  }
+
+  function renderAll(){
+    renderSkillList();
+    renderVisualsOnly();
+  }
+
+  // ================= v2 FEATURES =================
+  const $ = id => document.getElementById(id);
+  function flash(btn, txt){ const o = btn.textContent; btn.textContent = txt; setTimeout(() => btn.textContent = o, 1600); }
+  function openModal(html){ $("modalBox").innerHTML = html; $("modal").hidden = false; }
+  function closeModal(){ $("modal").hidden = true; }
+  $("modal").addEventListener("click", e => { if(e.target.id === "modal") closeModal(); });
+  document.addEventListener("keydown", e => { if(e.key === "Escape") closeModal(); });
+
+  // ---------- Accounts + storage (real server if available, else in-browser fallback) ----------
+  const auth = JSON.parse(localStorage.getItem("skillgap_auth") || "{}");
+  async function sha(t){
+    try{ const b = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(t)); return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2,"0")).join(""); }
+    catch(e){ return btoa(t); }
+  }
+  async function localApi(m, path, b){
+    const users = JSON.parse(localStorage.getItem("skillgap_users") || "{}");
+    const put = () => localStorage.setItem("skillgap_users", JSON.stringify(users));
+    if(path === "/register" || path === "/login"){
+      const u = (b.username || "").trim().toLowerCase();
+      if(!u || !b.password) throw new Error("Enter username and password");
+      const h = await sha(b.password);
+      if(path === "/register"){ if(users[u]) throw new Error("Username taken"); users[u] = {h, data:null}; put(); }
+      else if(!users[u] || users[u].h !== h) throw new Error("Wrong username or password");
+      return {token:"local:" + u, username:u};
+    }
+    const u = (auth.token || "").replace("local:", "");
+    if(!users[u]) throw new Error("Not signed in");
+    if(m === "PUT"){ users[u].data = b; put(); return {ok:true}; }
+    return {data:users[u].data};
+  }
+  async function api(method, path, body){
+    if(location.protocol !== "file:"){
+      try{
+        const r = await fetch("/api" + path, {method, headers:{"Content-Type":"application/json", Authorization:"Bearer " + (auth.token || "")}, body: body ? JSON.stringify(body) : undefined});
+        if(![404,405,501].includes(r.status)){
+          const j = await r.json();
+          if(!r.ok) throw new Error(j.error || "Request failed");
+          return j;
+        }
+      }catch(e){ if(e.name === "Error") throw e; }
+    }
+    return localApi(method, path, body);
+  }
+  let syncTimer;
+  function setSync(t){ const el = $("syncState"); if(el) el.textContent = t; }
+  function pushCloud(){
+    if(!auth.token || readOnly) return;
+    clearTimeout(syncTimer);
+    syncTimer = setTimeout(async () => {
+      try{ await api("PUT", "/data", state); setSync("synced"); } catch(e){ setSync("offline"); }
+    }, 600);
+  }
+  function renderAuth(){
+    if(readOnly){
+      $("authBar").innerHTML = `<span>Shared profile · read-only</span><button class="btn-sm" id="ownBtn">Open my own</button>`;
+      $("ownBtn").onclick = () => { history.replaceState(null, "", location.pathname); location.reload(); };
+    } else if(auth.token){
+      $("authBar").innerHTML = `<span>● ${escapeHtml(auth.username)} · <span id="syncState">synced</span></span><button class="btn-sm" id="logoutBtn">Sign out</button>`;
+      $("logoutBtn").onclick = () => { delete auth.token; delete auth.username; localStorage.removeItem("skillgap_auth"); renderAuth(); };
+    } else {
+      $("authBar").innerHTML = `<button class="btn-sm" id="loginBtn">Sign in / Register</button>`;
+      $("loginBtn").onclick = () => openAuth("login");
+    }
+  }
+  function openAuth(mode){
+    const login = mode === "login";
+    openModal(`<h3>${login ? "Sign in" : "Create account"}</h3>
+      <input id="aUser" class="m-in" placeholder="Username" autocomplete="username">
+      <input id="aPass" class="m-in" type="password" placeholder="Password (min 6 characters)" autocomplete="${login ? "current-password" : "new-password"}">
+      <div class="m-err" id="aErr"></div>
+      <button class="btn" id="aGo">${login ? "Sign in" : "Register"}</button>
+      <button class="m-link" id="aSwap">${login ? "No account? Register" : "Have an account? Sign in"}</button>`);
+    $("aSwap").onclick = () => openAuth(login ? "register" : "login");
+    $("aGo").onclick = async () => {
+      try{
+        const body = {username:$("aUser").value, password:$("aPass").value};
+        if(!login && body.password.length < 6) throw new Error("Password must be at least 6 characters");
+        const r = await api("POST", "/" + mode, body);
+        auth.token = r.token; auth.username = r.username;
+        localStorage.setItem("skillgap_auth", JSON.stringify(auth));
+        const d = (await api("GET", "/data")).data;
+        if(d && Array.isArray(d.skills)){ state = normalize(d); roleSelect.value = state.role; localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+        else pushCloud();
+        closeModal(); renderAuth(); renderAll();
+      }catch(e){ $("aErr").textContent = e.message; }
+    };
+  }
+
+  // ---------- Skill quizzes (first option is the correct one; options are shuffled when shown) ----------
+  const QUIZ = {
+    "javascript":[["What does typeof null return?",["'object'","'null'","'undefined'"]],["Which array method returns a new array of transformed items?",["map","forEach","push"]],["What is a closure?",["A function that remembers variables from its outer scope","A way to close the browser tab","A private class field"]]],
+    "html & css":[["Which property lets flex items wrap onto new lines?",["flex-wrap","flex-flow: none","align-wrap"]],["Most semantic element for the main site navigation?",["<nav>","<div>","<section>"]],["In the box model, what sits between content and border?",["padding","margin","outline"]]],
+    "react":[["Which hook stores local component state?",["useState","useRef","useMemo"]],["Why do list items need a key prop?",["Helps React track items between renders","Used for CSS styling","Makes items clickable"]],["When does useEffect(fn, []) run?",["Once after the first render","On every render","Never"]]],
+    "git & version control":[["Create a branch and switch to it:",["git checkout -b x","git branch -d x","git merge x"]],["What does git pull do?",["Fetches and merges remote changes","Uploads your commits","Deletes a branch"]],["Which command replays commits onto a new base?",["git rebase","git stash","git tag"]]],
+    "sql":[["Which clause filters rows AFTER GROUP BY?",["HAVING","WHERE","ORDER BY"]],["Which JOIN keeps all rows from the left table?",["LEFT JOIN","INNER JOIN","CROSS JOIN"]],["A PRIMARY KEY guarantees…",["A unique, non-null row identifier","Faster text search","Encrypted data"]]],
+    "python":[["What type is [x*2 for x in range(3)]?",["list","generator","tuple"]],["Which of these is mutable?",["list","tuple","str"]],["What does def f(a, b=2) mean?",["b has a default value","b is required","b is a keyword"]]],
+    "statistics":[["Which measure is least affected by outliers?",["Median","Mean","Range"]],["A p-value below 0.05 usually means…",["Evidence against the null hypothesis","A large effect size","The data is normal"]],["A correlation of -0.9 indicates…",["A strong negative relationship","A weak relationship","No relationship"]]],
+    "linux":[["Which command lists files with permissions?",["ls -l","cd -l","cat -p"]],["chmod 755 file means…",["Owner rwx, others r-x","Delete the file","Read-only for everyone"]],["Which command shows running processes?",["ps","mv","ln"]]],
+    "rest apis":[["Which method is idempotent and replaces a resource?",["PUT","POST","CONNECT"]],["Status code for 'resource created'?",["201","200","204"]],["HTTP 403 means…",["Logged in but not allowed","Not logged in","Server crashed"]]],
+    "docker":[["Image vs container?",["Image is a template; container is a running instance","They are identical","Image is the running instance"]],["Which file defines how to build an image?",["Dockerfile","package.json","docker-compose.yml"]],["Command to list running containers?",["docker ps","docker build","docker pull"]]]
+  };
+  QUIZ["databases & sql"] = QUIZ.sql;
+  QUIZ["math & statistics"] = QUIZ.statistics;
+  QUIZ["core language (node/java/python)"] = QUIZ.python;
+  QUIZ["scripting (bash/python)"] = QUIZ.python;
+
+  function openQuiz(sk){
+    const qs = QUIZ[sk.name.toLowerCase()].map(q => ({t:q[0], o:q[1].map((x,i) => ({x, ok:i === 0})).sort(() => Math.random() - 0.5)}));
+    let i = 0, c = 0;
+    (function show(){
+      if(i >= qs.length){
+        const lvl = Math.round(1 + c / qs.length * 8);
+        setLevel(sk, lvl); save(); renderAll();
+        openModal(`<div class="m-sub">${escapeHtml(sk.name)}</div><div class="m-big">${c}/${qs.length} correct → level ${lvl}/10</div><p class="m-sub">Your skill level was set from this result. You can still fine-tune it with the slider.</p><button class="btn" id="mClose">Done</button>`);
+        $("mClose").onclick = closeModal;
+        return;
+      }
+      const q = qs[i];
+      openModal(`<div class="m-sub">${escapeHtml(sk.name)} · question ${i+1} of ${qs.length}</div><h3>${escapeHtml(q.t)}</h3>` + q.o.map((o,k) => `<button class="btn m-opt" data-k="${k}">${escapeHtml(o.x)}</button>`).join(""));
+      document.querySelectorAll(".m-opt").forEach(b => b.onclick = () => { if(q.o[b.dataset.k].ok) c++; i++; show(); });
+    })();
+  }
+
+  // ---------- Resume import ----------
+  function levelFromText(t, name){
+    let n = 0;
+    name.toLowerCase().split(/[\/()&,]| and /).map(a => a.trim()).filter(a => a.length > 1).forEach(a => {
+      const re = new RegExp("(^|[^a-z0-9+#])" + a.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "($|[^a-z0-9+#])", "g");
+      n += (t.match(re) || []).length;
+    });
+    return n ? Math.min(7, 2 + Math.round(n * 1.5)) : 0;
+  }
+  function analyseResume(text){
+    const t = text.toLowerCase(), names = new Set(state.skills.map(x => x.name)), hits = [];
+    Object.values(ROLE_PRESETS).forEach(arr => arr.forEach(x => names.add(x.name)));
+    names.forEach(nm => {
+      const l = levelFromText(t, nm), k = nm.toLowerCase();
+      if(l && l > (state.known[k] || 0)){ state.known[k] = l; hits.push(nm); }
+    });
+    state.skills.forEach(x => { const k = state.known[x.name.toLowerCase()]; if(k > x.current) x.current = k; });
+    save(); renderAll();
+    return hits;
+  }
+  function loadScript(src){ return new Promise((res, rej) => { const el = document.createElement("script"); el.src = src; el.onload = res; el.onerror = rej; document.head.appendChild(el); }); }
+  async function pdfText(file){
+    const base = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/";
+    if(!window.pdfjsLib){ await loadScript(base + "pdf.min.js"); pdfjsLib.GlobalWorkerOptions.workerSrc = base + "pdf.worker.min.js"; }
+    const pdf = await pdfjsLib.getDocument({data: await file.arrayBuffer()}).promise;
+    let out = "";
+    for(let p = 1; p <= pdf.numPages; p++){ const c = await (await pdf.getPage(p)).getTextContent(); out += c.items.map(i => i.str).join(" ") + "\n"; }
+    return out;
+  }
+  function runResume(){
+    const t = $("resumeText").value.trim(), msg = $("resumeMsg");
+    if(!t){ msg.textContent = "Paste text or choose a file first"; return; }
+    const hits = analyseResume(t);
+    msg.textContent = hits.length ? `Detected ${hits.length}: ${hits.slice(0,5).join(", ")}${hits.length > 5 ? "…" : ""}` : "No new skills detected";
+  }
+  $("resumeBtn").onclick = runResume;
+  $("resumeFile").onchange = async e => {
+    const f = e.target.files[0]; if(!f) return;
+    $("resumeMsg").textContent = "Reading file…";
+    try{ $("resumeText").value = /\.pdf$/i.test(f.name) ? await pdfText(f) : await f.text(); runResume(); }
+    catch(err){ $("resumeMsg").textContent = "Couldn't read that file — paste the text instead"; }
+  };
+
+  // ---------- Role recommendation ----------
+  function renderReco(){
+    const rows = Object.keys(ROLE_PRESETS).filter(r => ROLE_PRESETS[r].length).map(r => {
+      const sk = ROLE_PRESETS[r], w = sk.reduce((a, x) => a + x.importance, 0);
+      const pct = Math.round(sk.reduce((a, x) => a + clamp((state.known[x.name.toLowerCase()] || 0) / x.required * 100, 0, 100) * x.importance, 0) / w);
+      return {r, pct};
+    }).sort((a, b) => b.pct - a.pct);
+    $("recoList").innerHTML = rows.map((x, i) => `<div class="reco-row" data-role="${escapeHtml(x.r)}"><span class="reco-name">${i === 0 && x.pct > 0 ? "★ " : ""}${escapeHtml(x.r)}</span><span class="reco-bar"><i style="width:${x.pct}%"></i></span><span class="reco-pct">${x.pct}%</span></div>`).join("");
+    $("recoList").querySelectorAll(".reco-row").forEach(el => el.onclick = () => {
+      const role = el.dataset.role;
+      if(role === state.role || !confirm(`Switch to "${role}"? Your skill levels carry over; custom edits to this list are replaced.`)) return;
+      state.role = role; state.skills = freshSkillsFromPreset(role, state.known); roleSelect.value = role;
+      save(); renderAll();
+    });
+  }
+
+  // ---------- Export / share ----------
+  $("pdfBtn").onclick = () => window.print();
+  $("shareBtn").onclick = () => {
+    const data = {role:state.role, skills:state.skills.map(x => ({name:x.name, required:x.required, importance:x.importance, current:x.current, status:x.status}))};
+    const url = location.href.split("#")[0] + "#share=" + btoa(encodeURIComponent(JSON.stringify(data)));
+    navigator.clipboard.writeText(url).then(() => flash($("shareBtn"), "Link copied ✓")).catch(() => prompt("Copy this link:", url));
+  };
+
+  renderAuth();
+  if(auth.token && !readOnly){
+    api("GET", "/data").then(r => { if(r.data && Array.isArray(r.data.skills)){ state = normalize(r.data); roleSelect.value = state.role; renderAll(); } }).catch(() => {});
+  }
+
+  renderAll();
+})();
+</script>
+</body>
+</html>
